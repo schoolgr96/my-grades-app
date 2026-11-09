@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة درجات الطلبة </title>
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --border-color: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--primary); padding: 10px; }
+        
+        #loginScreen { max-width: 420px; margin: 60px auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid var(--border-color); }
+        .login-title { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; color: var(--accent); }
+        .tab-toggle { display: flex; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; }
+        .tab-btn { flex: 1; text-align: center; padding: 8px; font-size: 13px; font-weight: bold; cursor: pointer; color: #64748b; background: none; border: none; }
+        .tab-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); margin-bottom: -2px; }
+        
+        .telegram-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px; border-radius: 6px; margin-top: 12px; text-align: center; font-size: 12px; color: #1e40af; }
+        .telegram-box a { color: #2563eb; font-weight: bold; text-decoration: none; }
+
+        .container { max-width: 980px; margin: 0 auto; background: var(--card-bg); padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); border: 1px solid var(--border-color); display: none; }
+        .system-header { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 5px; }
+        .excel-bar { background: #f8fafc; padding: 6px 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px dashed var(--border-color); font-size: 12px; }
+        .search-section { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px; }
+        .form-control { padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; outline: none; width: 100%; margin-bottom: 10px; }
+        .btn { background: var(--accent); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-success { background: var(--success); }
+        .btn-warning { background: #d97706; }
+        .btn-info { background: #0284c7; }
+        .btn-danger { background: var(--danger); }
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .section-box { background: #f8fafc; padding: 8px 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px; }
+        .section-title { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #334155; border-right: 3px solid var(--accent); padding-right: 6px; }
+        
+        .data-table { width: 100%; border-collapse: collapse; background: white; }
+        .data-table th, .data-table td { border: 1px solid var(--border-color); padding: 4px 6px; font-size: 11px; text-align: right; }
+        .data-table th { background: #f1f5f9; width: 38%; color: var(--primary); }
+        .plain-text-val { font-weight: bold; color: #1e293b; font-size: 12px; padding: 2px 4px; }
+
+        .actions-panel { display: flex; flex-wrap: wrap; gap: 6px; background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px; align-items: center; }
+        .bottom-results-container { overflow-x: auto; margin-top: 5px; }
+        .results-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 11px; background: white; }
+        .results-table th, .results-table td { border: 1px solid var(--border-color); padding: 6px 4px; }
+        .results-table th { background: #e2e8f0; color: var(--primary); }
+        
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 360px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .modal-header { font-weight: bold; font-size: 14px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+        .modal-body label { font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px; margin-top: 8px; }
+        .modal-footer { margin-top: 15px; display: flex; gap: 6px; justify-content: flex-end; }
+        .limit-hint { font-size: 10px; color: #64748b; margin-top: 2px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="loginScreen">
+    <div class="login-title">🔐 نظام إدارة الدرجات المركزي</div>
+    <div class="tab-toggle">
+        <button class="tab-btn active" onclick="switchTab('login')">تسجيل الدخول</button>
+        <button class="tab-btn" onclick="switchTab('register')">طلب حساب جديد</button>
+    </div>
+
+    <div id="loginFormSection">
+        <label style="font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px;">كود المعلم:</label>
+        <input type="text" id="loginCode" class="form-control" placeholder="أدخل الكود الخاص بك...">
+        <button class="btn btn-success" style="width: 100%;" onclick="loginUser()">دخول للنظام</button>
+    </div>
+
+    <div id="registerFormSection" style="display: none;">
+        <label style="font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px;">كود المعلم المقترح:</label>
+        <input type="text" id="regCode" class="form-control" placeholder="مثال: T-101">
+        
+        <label style="font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px;">اسم المعلم:</label>
+        <input type="text" id="regName" class="form-control" placeholder="الاسم الثلاثي...">
+        
+        <label style="font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px;">معرف شيت الملف الشخصي (Spreadsheet ID):</label>
+        <input type="text" id="regSheetId" class="form-control" placeholder="الصق معرف ملفك الموجود في الرابط...">
+        
+        <button class="btn" style="width: 100%;" onclick="registerUser()">إرسال طلب التفعيل للمسؤول</button>
+
+        <div class="telegram-box">
+            💬 بعد إرسال الطلب، تواصل مع المسؤول للتفعيل عبر التليكرام:<br>
+            <a href="https://t.me/dg7_a7" target="_blank">@dg7_a7</a>
+        </div>
+    </div>
+    
+    <div id="loginStatusMsg" style="text-align: center; margin-top: 12px; font-size: 12px; font-weight: bold;"></div>
+</div>
+
+<div class="container" id="appMainContainer">
+    <div class="system-header" id="systemHeaderTitle">نظام إدارة درجات الطلبة</div>
+
+    <div class="excel-bar">
+        <span id="fileStatus" style="font-weight: bold; font-size: 12px; color: #16a34a;">🌐 متصل بملفك الشخصي بنجاح</span>
+        <div>
+            <button class="btn btn-success" style="padding: 3px 8px; font-size: 11px;" onclick="refreshUserData()">🔄 تحديث البيانات</button>
+            <button class="btn btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="logoutUser()">تسجيل الخروج</button>
+        </div>
+    </div>
+
+    <div class="search-section">
+        <label style="font-weight: bold; font-size: 12px;">بحث (كود أو الاسم):</label>
+        <input type="text" id="searchBox" class="form-control" style="flex: 1; margin-bottom: 0;" placeholder="اكتب كود أو اسم الطالب ثم اضغط بحث...">
+        <button class="btn" style="padding: 4px 10px;" onclick="searchStudent()">بحث</button>
+    </div>
+
+    <div class="grid-layout">
+        <div class="section-box" style="margin-bottom:0;">
+            <div class="section-title">بيانات الطالب</div>
+            <table class="data-table">
+                <tbody>
+                    <tr><th>كود الطالب</th><td><div id="lblCode" class="plain-text-val">--</div></td></tr>
+                    <tr><th>اسم الطالب</th><td><div id="lblName" class="plain-text-val">--</div></td></tr>
+                    <tr><th>الصف</th><td><div id="lblClass" class="plain-text-val">--</div></td></tr>
+                    <tr><th>الشعبة</th><td><div id="lblSection" class="plain-text-val">--</div></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-box" style="margin-bottom:0;">
+            <div class="section-title">إدخال ورصد الدرجة</div>
+            <table class="data-table">
+                <tbody>
+                    <tr>
+                        <th>المادة / الحقل</th>
+                        <td><select id="selectSubject" class="form-control" style="margin-bottom:0;" onchange="updateMaxLimitHint()"></select></td>
+                    </tr>
+                    <tr>
+                        <th>الشهر / الفصل</th>
+                        <td>
+                            <select id="selectMonth" class="form-control" style="margin-bottom:0;" onchange="updateMaxLimitHint(); filterMaterialsByMonth();">
+                                <option value="الشهر الأول">الشهر الأول</option>
+                                <option value="الشهر الثاني">الشهر الثاني</option>
+                                <option value="الشهر الثالث">الشهر الثالث</option>
+                                <option value="الشهر الرابع">الشهر الرابع</option>
+                                <option value="نصف السنة">نصف السنة</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>الدرجة</th>
+                        <td>
+                            <input type="number" id="inputGradeValue" class="form-control" style="margin-bottom:0;" placeholder="أدخل الدرجة...">
+                            <div id="limitHint" class="limit-hint">الحد الأعلى المسموح: --</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="actions-panel">
+        <button class="btn btn-success" onclick="saveDirectGrade()">حفظ ورصد مباشر</button>
+        <button class="btn btn-warning" onclick="openAttendanceModal()">تسجيل الحضور والغياب</button>
+        <button class="btn btn-info" style="background: #7c3aed;" onclick="openAttendanceReportModal()">📊 تقرير الغياب</button>
+        <button class="btn" style="background: #0284c7;" onclick="openAddStudentModal()">إضافة طالب</button>
+        <button class="btn btn-warning" onclick="openEditStudentModal()">تعديل ونقل الطالب</button>
+        <button class="btn btn-danger" onclick="deleteStudent()">حذف الطالب</button>
+        <button class="btn" style="background: #475569;" onclick="clearStudentFields()">فرغ الحقول</button>
+    </div>
+
+    <div class="section-box">
+        <div class="section-title">العرض الأول: درجات مواد الشهر المختار</div>
+        <div class="bottom-results-container">
+            <table class="results-table">
+                <thead><tr id="resultsTableHeader"><th>المادة / البيان</th></tr></thead>
+                <tbody><tr id="resultsTableRow"><td style="font-weight: bold; background: #f8fafc;">الدرجة</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section-box">
+        <div class="section-title" style="border-right-color: #d97706;">العرض الثاني (مجموع الشهر والسعيات)</div>
+        <div class="bottom-results-container">
+            <table class="results-table" style="background: #fffbebfb;">
+                <thead><tr id="summaryTableHeader"></tr></thead>
+                <tbody><tr id="summaryTableRow"></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="addStudentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">إضافة طالب جديد</div>
+        <div class="modal-body">
+            <label>كود الطالب المقترح:</label>
+            <input type="text" id="newStudentCode" class="form-control" style="background: #f8fafc; font-weight: bold;">
+            <label>اسم الطالب:</label>
+            <input type="text" id="newStudentName" class="form-control" placeholder="أدخل اسم الطالب...">
+            <label>الشعبة المستهدفة:</label>
+            <select id="newStudentSection" class="form-control"></select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="saveNewStudent()">حفظ وإضافة</button>
+            <button class="btn btn-danger" onclick="closeAddStudentModal()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div id="editStudentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">تعديل ونقل معلومات الطالب</div>
+        <div class="modal-body">
+            <label>كود الطالب:</label>
+            <input type="text" id="editStudentCode" class="form-control">
+            <label>اسم الطالب:</label>
+            <input type="text" id="editStudentName" class="form-control">
+            <label>الشعبة الحالية / المنقول إليها:</label>
+            <select id="editStudentSection" class="form-control"></select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="saveEditStudent()">حفظ التعديلات</button>
+            <button class="btn btn-danger" onclick="closeEditStudentModal()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div id="attendanceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">تسجيل الحضور والغياب</div>
+        <div class="modal-body">
+            <label>التاريخ:</label>
+            <input type="date" id="attendanceDate" class="form-control">
+            <label>الحالة:</label>
+            <select id="attendanceStatus" class="form-control">
+                <option value="حاضر">حاضر</option>
+                <option value="غائب">غائب</option>
+                <option value="إجازة">إجازة</option>
+                <option value="تأخير">تأخير</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="saveAttendance()">حفظ الحضور</button>
+            <button class="btn btn-danger" onclick="closeAttendanceModal()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div id="attendanceReportModal" class="modal">
+    <div class="modal-content" style="width: 480px; max-width: 95%;">
+        <div class="modal-header" style="display: flex; justify-content: space-between;">
+            <span>📋 تقرير الحضور والغياب المفصل</span>
+            <button class="btn btn-danger" style="padding: 2px 6px; font-size: 10px;" onclick="closeAttendanceReportModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="reportStudentInfo" style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #334155;"></div>
+            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <table class="results-table" style="width: 100%;">
+                    <thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead>
+                    <tbody id="attendanceReportTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-info" onclick="window.print()">🖨️ طباعة التقرير</button>
+            <button class="btn btn-danger" onclick="closeAttendanceReportModal()">إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let globalStudents = [];
+    let systemConfig = { subjects: [], summaryFields: [], sections: [] };
+    let currentStudentIndex = -1;
+    let loggedInTeacherCode = "";
+
+    const CENTRAL_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyxlDgUqWFAHeOlWErWfLgCiPRm92Q5lWxXrIisfTs1RM36ianmoVpI5uGS22_ldTB2bQ/exec";
+
+    window.onload = function() {
+        const loginCodeInput = document.getElementById('loginCode');
+        if (loginCodeInput) loginCodeInput.addEventListener('keypress', e => { if (e.key === 'Enter') loginUser(); });
+
+        const searchBox = document.getElementById('searchBox');
+        if (searchBox) searchBox.addEventListener('keypress', e => { if (e.key === 'Enter') searchStudent(); });
+
+        const gradeInput = document.getElementById('inputGradeValue');
+        if (gradeInput) gradeInput.addEventListener('keypress', e => { if (e.key === 'Enter') saveDirectGrade(); });
+
+        const regCodeInput = document.getElementById('regCode');
+        if (regCodeInput) regCodeInput.addEventListener('keypress', e => { if (e.key === 'Enter') registerUser(); });
+
+        const savedCode = localStorage.getItem('teacherCode');
+        if (savedCode) {
+            loggedInTeacherCode = savedCode;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appMainContainer').style.display = 'block';
+            loginUserSilently(true);
+        } else {
+            if (loginCodeInput) loginCodeInput.focus();
+        }
+    };
+
+    function switchTab(tab) {
+        if(tab === 'login') {
+            document.getElementById('loginFormSection').style.display = 'block';
+            document.getElementById('registerFormSection').style.display = 'none';
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.querySelectorAll('.tab-btn')[1].classList.remove('active');
+            document.getElementById('loginCode').focus();
+        } else {
+            document.getElementById('loginFormSection').style.display = 'none';
+            document.getElementById('registerFormSection').style.display = 'block';
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.querySelectorAll('.tab-btn')[0].classList.remove('active');
+            document.getElementById('regCode').focus();
+        }
+    }
+
+    function registerUser() {
+        let code = document.getElementById('regCode').value.trim();
+        let name = document.getElementById('regName').value.trim();
+        let sheetId = document.getElementById('regSheetId').value.trim();
+        let msgDiv = document.getElementById('loginStatusMsg');
+
+        if(!code || !name || !sheetId) {
+            msgDiv.style.color = "red";
+            msgDiv.innerText = "يرجى ملء جميع الحقول المطلوبة!";
+            return;
+        }
+
+        msgDiv.style.color = "blue";
+        msgDiv.innerText = "⏳ جاري إرسال طلبك للمسؤول...";
+
+        // إرسال البيانات بالترتيب السليم والصحيح
+        fetch(CENTRAL_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                action: "registerUser", 
+                teacherCode: code, 
+                teacherName: name, 
+                userSheetId: sheetId 
+            })
+        })
+        .then(res => res.json())
+        .then(result => {
+            msgDiv.style.color = result.success ? "green" : "red";
+            msgDiv.innerText = result.message;
+        })
+        .catch(err => {
+            msgDiv.style.color = "red";
+            msgDiv.innerText = "حدث خطأ في الاتصال بالخادم!";
+        });
+    }
+
+    function loginUser() {
+        let code = document.getElementById('loginCode').value.trim();
+        let msgDiv = document.getElementById('loginStatusMsg');
+        if(!code) {
+            msgDiv.style.color = "red";
+            msgDiv.innerText = "أدخل كود المعلم الخاص بك!";
+            return;
+        }
+
+        msgDiv.style.color = "blue";
+        msgDiv.innerText = "⏳ جاري التحقق من حالة الحساب والتفعيل...";
+
+        fetch(CENTRAL_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "loginUser", teacherCode: code })
+        })
+        .then(res => res.json())
+        .then(result => {
+            if(result.success) {
+                loggedInTeacherCode = code;
+                localStorage.setItem('teacherCode', code); 
+                globalStudents = result.students || [];
+                systemConfig = result.config || { subjects: [], summaryFields: [], sections: [] };
+                
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appMainContainer').style.display = 'block';
+                document.getElementById('systemHeaderTitle').innerText = `منظومة درجات الأستاذ: ${result.user.name}`;
+
+                populateDynamicDropdowns();
+                filterMaterialsByMonth();
+                renderStaticSummaryHeader();
+                document.getElementById('searchBox').focus();
+            } else {
+                localStorage.removeItem('teacherCode');
+                msgDiv.style.color = "red";
+                msgDiv.innerText = result.message;
+            }
+        })
+        .catch(err => {
+            msgDiv.style.color = "red";
+            msgDiv.innerText = "حدث خطأ أثناء الاتصال بالسيرفر!";
+        });
+    }
+
+    function logoutUser() {
+        loggedInTeacherCode = "";
+        localStorage.removeItem('teacherCode'); 
+        currentStudentIndex = -1;
+        document.getElementById('appMainContainer').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('loginCode').value = '';
+        document.getElementById('loginStatusMsg').innerText = '';
+        document.getElementById('loginCode').focus();
+    }
+
+    function refreshUserData() {
+        if(!loggedInTeacherCode) return;
+        document.getElementById('fileStatus').innerText = "⏳ جاري تحديث البيانات...";
+        loginUserSilently(false);
+    }
+
+    function loginUserSilently(isInitialLoad) {
+        fetch(CENTRAL_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "loginUser", teacherCode: loggedInTeacherCode })
+        })
+        .then(res => res.json())
+        .then(result => {
+            if(result.success) {
+                globalStudents = result.students || [];
+                systemConfig = result.config || { subjects: [], summaryFields: [], sections: [] };
+                
+                if (isInitialLoad) {
+                    document.getElementById('systemHeaderTitle').innerText = `منظومة درجات الأستاذ: ${result.user.name}`;
+                    populateDynamicDropdowns();
+                    renderStaticSummaryHeader();
+                }
+
+                filterMaterialsByMonth();
+                if(currentStudentIndex !== -1 && globalStudents[currentStudentIndex]) {
+                    renderSelectedStudentGrades(globalStudents[currentStudentIndex]);
+                }
+                document.getElementById('fileStatus').innerText = `🌐 متصل بملفك الشخصي بنجاح - تم تحديث (${globalStudents.length}) سجل`;
+            } else {
+                localStorage.removeItem('teacherCode');
+                document.getElementById('appMainContainer').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('loginStatusMsg').style.color = "red";
+                document.getElementById('loginStatusMsg').innerText = result.message;
+            }
+        })
+        .catch(err => {
+            document.getElementById('fileStatus').innerText = "❌ فشل تحديث البيانات من الخادم";
+        });
+    }
+
+    function populateDynamicDropdowns() {
+        const selectSubject = document.getElementById('selectSubject');
+        selectSubject.innerHTML = "";
+        const group1Subjects = systemConfig.subjects.filter(item => item.displayGroup !== "group2");
+        [...new Set(group1Subjects.map(item => item.subject))].forEach(sub => {
+            let opt = document.createElement('option');
+            opt.value = sub; opt.innerText = sub;
+            selectSubject.appendChild(opt);
+        });
+
+        const newStudentSection = document.getElementById('newStudentSection');
+        const editStudentSection = document.getElementById('editStudentSection');
+        newStudentSection.innerHTML = "";
+        editStudentSection.innerHTML = "";
+
+        systemConfig.sections.forEach(sec => {
+            let opt1 = document.createElement('option');
+            opt1.value = sec.sheetName; opt1.innerText = sec.label;
+            newStudentSection.appendChild(opt1);
+            let opt2 = document.createElement('option');
+            opt2.value = sec.sheetName; opt2.innerText = sec.label;
+            editStudentSection.appendChild(opt2);
+        });
+
+        updateMaxLimitHint();
+    }
+
+    function renderStaticSummaryHeader() {
+        const sumHeader = document.getElementById('summaryTableHeader');
+        sumHeader.innerHTML = "";
+        systemConfig.summaryFields.slice(0, 8).forEach(f => {
+            let th = document.createElement('th');
+            th.innerText = f.subject;
+            sumHeader.appendChild(th);
+        });
+    }
+
+    function filterMaterialsByMonth() {
+        const selectedMonth = document.getElementById('selectMonth').value;
+        const headerRow = document.getElementById('resultsTableHeader');
+        headerRow.innerHTML = "<th>المادة / البيان</th>";
+        systemConfig.subjects.filter(sub => sub.displayGroup !== "group2" && (!sub.month || sub.month === selectedMonth)).slice(0, 7).forEach(sub => {
+            let th = document.createElement('th');
+            th.innerText = sub.subject + (sub.month ? ` (${sub.month})` : '');
+            headerRow.appendChild(th);
+        });
+        if (currentStudentIndex !== -1 && globalStudents[currentStudentIndex]) {
+            renderSelectedStudentGrades(globalStudents[currentStudentIndex]);
+        }
+    }
+
+    function updateMaxLimitHint() {
+        const selectedSub = document.getElementById('selectSubject').value;
+        const selectedMonth = document.getElementById('selectMonth').value;
+        const match = systemConfig.subjects.find(s => s.subject === selectedSub && (s.month === selectedMonth || !s.month));
+        document.getElementById('limitHint').innerText = match ? `الحد الأعلى المسموح (${selectedSub}): ${match.maxLimit}` : `الحد الأعلى المسموح: --`;
+    }
+
+    function searchStudent() {
+        const query = document.getElementById('searchBox').value.trim().toLowerCase();
+        if (!query) return alert("أدخل كود أو اسم الطالب للبحث!");
+        currentStudentIndex = globalStudents.findIndex(s => String(s['كود الطالب']).toLowerCase().trim() === query || String(s['اسم الطالب']).toLowerCase().includes(query));
+        if (currentStudentIndex !== -1) {
+            let s = globalStudents[currentStudentIndex];
+            document.getElementById('lblCode').innerText = s['كود الطالب'] || '';
+            document.getElementById('lblName').innerText = s['اسم الطالب'] || '';
+            document.getElementById('lblClass').innerText = s['الصف'] || 'الأول المتوسط';
+            document.getElementById('lblSection').innerText = s['الشعبة'] || '';
+            renderSelectedStudentGrades(s);
+            document.getElementById('inputGradeValue').focus();
+        } else {
+            alert(`لم يتم العثور على الطالب (${query})!`);
+            clearStudentFields();
+        }
+    }
+
+    function renderSelectedStudentGrades(student) {
+        const detailRow = document.getElementById('resultsTableRow');
+        const summaryRow = document.getElementById('summaryTableRow');
+        detailRow.innerHTML = "<td style='font-weight: bold; background: #f8fafc;'>الدرجة</td>";
+        summaryRow.innerHTML = "";
+
+        const selectedMonth = document.getElementById('selectMonth').value;
+        systemConfig.subjects.filter(sub => sub.displayGroup !== "group2" && (!sub.month || sub.month === selectedMonth)).slice(0, 7).forEach(sub => {
+            let key = sub.subject + "_" + sub.month;
+            let val = student[key] || student[sub.subject] || '-';
+            let td = document.createElement('td'); td.innerText = val;
+            detailRow.appendChild(td);
+        });
+
+        systemConfig.summaryFields.slice(0, 8).forEach(f => {
+            let key = f.subject + "_" + f.month;
+            let val = student[key] || student[f.subject] || '-';
+            let td = document.createElement('td'); td.innerText = val;
+            summaryRow.appendChild(td);
+        });
+    }
+
+    function clearStudentFields() {
+        currentStudentIndex = -1;
+        document.getElementById('searchBox').value = '';
+        document.getElementById('lblCode').innerText = '--';
+        document.getElementById('lblName').innerText = '--';
+        document.getElementById('lblClass').innerText = '--';
+        document.getElementById('lblSection').innerText = '--';
+        document.getElementById('inputGradeValue').value = '';
+        document.getElementById('resultsTableRow').innerHTML = "<td style='font-weight: bold; background: #f8fafc;'>الدرجة</td>";
+        document.getElementById('summaryTableRow').innerHTML = "";
+    }
+
+    function saveDirectGrade() {
+        if (currentStudentIndex === -1) return alert("اختر طالباً أولاً!");
+        let gradeVal = document.getElementById('inputGradeValue').value;
+        if (gradeVal === "") return alert("أدخل الدرجة!");
+
+        let s = globalStudents[currentStudentIndex];
+        let subName = document.getElementById('selectSubject').value;
+        let monthName = document.getElementById('selectMonth').value;
+        let key = subName + "_" + monthName;
+        let oldVal = s[key] || s[subName] || "";
+
+        let subLower = subName.toLowerCase();
+        let isCumulative = subLower.includes("نشاط") || subLower.includes("يومي") || subLower.includes("activity") || subLower.includes("daily");
+
+        if (!isCumulative && oldVal !== "" && oldVal !== "-") {
+            let confirmReplace = confirm(`تنبيه: الطالب (${s['اسم الطالب']}) لديه درجة قديمة مسجلة مسبقاً في (${subName} - ${monthName}) وهي [ ${oldVal} ].\nهل تريد استبدالها بالدرجة الجديدة [ ${gradeVal} ]؟`);
+            if (!confirmReplace) return;
+        }
+
+        let match = systemConfig.subjects.find(sub => sub.subject === subName && (sub.month === monthName || !sub.month));
+
+        fetch(CENTRAL_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "executeUserAction",
+                teacherCode: loggedInTeacherCode,
+                userAction: "saveGrade",
+                sheetName: s['__sheetName'],
+                rowIndex: s['__rowIndex'],
+                colIndex: match ? match.colIndex : 4,
+                gradeVal: parseFloat(gradeVal)
+            })
+        })
+        .then(res => res.json())
+        .then(result => {
+            alert(result.message);
+            if(result.success) {
+                document.getElementById('inputGradeValue').value = "";
+                loginUserSilently(false);
+            }
+        });
+    }
+
+    function openAddStudentModal() { 
+        document.getElementById('newStudentCode').value = "S-" + Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('newStudentName').value = "";
+        document.getElementById('addStudentModal').style.display = 'flex'; 
+    }
+    function closeAddStudentModal() { document.getElementById('addStudentModal').style.display = 'none'; }
+    function saveNewStudent() {
+        const code = document.getElementById('newStudentCode').value.trim();
+        const name = document.getElementById('newStudentName').value.trim();
+        const sheetName = document.getElementById('newStudentSection').value;
+        if (!code || !name) return alert("يرجى ملء جميع الحقول!");
+
+        fetch(CENTRAL_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "executeUserAction", teacherCode: loggedInTeacherCode, userAction: "addStudent", studentCode: code, studentName: name, targetSheetName: sheetName })
+        })
+        .then(res => res.json())
+        .then(res => { alert(res.message); if(res.success) { closeAddStudentModal(); loginUserSilently(false); } });
+    }
+
+    function openEditStudentModal() {
+        if (currentStudentIndex === -1) return alert("اختر طالباً أولاً!");
+        let s = globalStudents[currentStudentIndex];
+        document.getElementById('editStudentCode').value = s['كود الطالب'];
+        document.getElementById('editStudentName').value = s['اسم الطالب'];
+        let secSelect = document.getElementById('editStudentSection');
+        for(let i=0; i<secSelect.options.length; i++) {
+            if(secSelect.options[i].value === s['__sheetName']) { secSelect.selectedIndex = i; break; }
+        }
+        document.getElementById('editStudentModal').style.display = 'flex';
+    }
+    function closeEditStudentModal() { document.getElementById('editStudentModal').style.display = 'none'; }
+    function saveEditStudent() {
+        let s = globalStudents[currentStudentIndex];
+        const newCode = document.getElementById('editStudentCode').value.trim();
+        const newName = document.getElementById('editStudentName').value.trim();
+        const targetSec = document.getElementById('editStudentSection').value;
+        if(!newCode || !newName) return alert("أدخل اسم وكود الطالب!");
+
+        fetch(CENTRAL_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "executeUserAction", teacherCode: loggedInTeacherCode, userAction: "updateStudent", sheetName: s['__sheetName'], rowIndex: s['__rowIndex'], studentCode: newCode, studentName: newName, targetSheetName: targetSec })
+        })
+        .then(res => res.json())
+        .then(res => { alert(res.message); if(res.success) { closeEditStudentModal(); loginUserSilently(false); } });
+    }
+
+    function deleteStudent() {
+        if (currentStudentIndex === -1) return alert("اختر طالباً أولاً!");
+        let s = globalStudents[currentStudentIndex];
+        if (confirm(`هل أنت متأكد من حذف الطالب (${s['اسم الطالب']})؟`)) {
+            fetch(CENTRAL_WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "executeUserAction", teacherCode: loggedInTeacherCode, userAction: "deleteStudent", sheetName: s['__sheetName'], rowIndex: s['__rowIndex'] })
+            })
+            .then(res => res.json())
+            .then(res => { alert(res.message); if(res.success) { clearStudentFields(); loginUserSilently(false); } });
+        }
+    }
+
+    function openAttendanceModal() {
+        if (currentStudentIndex === -1) return alert("اختر طالباً أولاً!");
+        document.getElementById('attendanceDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('attendanceModal').style.display = 'flex';
+    }
+    function closeAttendanceModal() { document.getElementById('attendanceModal').style.display = 'none'; }
+    function saveAttendance() {
+        let s = globalStudents[currentStudentIndex];
+        fetch(CENTRAL_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "executeUserAction", teacherCode: loggedInTeacherCode, userAction: "saveAttendance", studentCode: s['كود الطالب'], studentName: s['اسم الطالب'], date: document.getElementById('attendanceDate').value, status: document.getElementById('attendanceStatus').value })
+        })
+        .then(res => res.json())
+        .then(res => { alert(res.message); closeAttendanceModal(); });
+    }
+
+    function openAttendanceReportModal() {
+        if (currentStudentIndex === -1) return alert("اختر طالباً أولاً!");
+        let s = globalStudents[currentStudentIndex];
+        document.getElementById('reportStudentInfo').innerText = `الطالب: ${s['اسم الطالب']} (${s['كود الطالب']})`;
+        document.getElementById('attendanceReportModal').style.display = 'flex';
+
+        fetch(CENTRAL_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "executeUserAction", teacherCode: loggedInTeacherCode, userAction: "getAttendanceReport", studentCode: s['كود الطالب'] })
+        })
+        .then(res => res.json())
+        .then(data => {
+            let tbody = document.getElementById('attendanceReportTableBody');
+            tbody.innerHTML = "";
+            (data.records || []).forEach(r => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.date}</td><td>${r.status}</td>`;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+    function closeAttendanceReportModal() { document.getElementById('attendanceReportModal').style.display = 'none'; }
+</script>
+
+</body>
+</html>
